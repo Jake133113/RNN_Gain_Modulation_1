@@ -64,7 +64,7 @@ class Frame:
             self.g = self.starting_g()        # (K x K) numpy.identity
 
     # --------------------------
-    # Methods corresponding to your original functions
+    # Methods corresponding to original functions
     # --------------------------
 
     def mercedes(self) -> torch.Tensor:
