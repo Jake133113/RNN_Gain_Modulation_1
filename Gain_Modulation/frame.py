@@ -11,74 +11,55 @@ from typing import Optional
 
 class Frame:
     """
-    Frame encapsulates:
+    Frame:
       - N: Dimension of input 
       - K: minimal overcomplete basis size = N*(N+1)/2
-      - W: (N x K) weight matrix (torch.Tensor on chosen device)
-      - g: (K x K) diagonal gain matrix (numpy.ndarray, identity by default)
-      - gamma: gradient step size (float)
-      - device: "cuda" if available and requested, else "cpu"
+      - W: (N x K) weight matrix
+      - g: (K x K) diagonal gain matrix 
+      - gamma: gradient step size 
     """
 
     def __init__(
         self,
-        N: int,
+        dim: int,
         gamma: Optional[float] = None,
-        seed: Optional[int] = None,
-        device: Optional[str] = None,
         init_weights: bool = True,
         init_gain: bool = True,
     ) -> None:
         """
         Args:
-            N: dimension of input
-            gamma: gradient step size; defaults to 1e-2 if None
-            seed: NumPy RNG seed for reproducibility of W construction
-            device: "cuda" / "cpu" / None (auto)
+            dim: dimension of input
+            gamma: gradient step size; defaults to 5e-3 if None
             init_weights: if True, build W during init
             init_gain: if True, build g during init
         """
-        self.N = int(N)
-        self.K = np.int64(self.N * (self.N + 1) // 2)
-
-        # RNG seed (affects only NumPy operations here)
-        if seed is not None:
-            np.random.seed(seed)
-
-        # Device
-        if device is None:
-            self.device = "cuda" if torch.cuda.is_available() else "cpu"
-        else:
-            self.device = device
+        self.dim = int(dim)
+        self.K = np.int64(self.dim * (self.dim + 1) // 2)
 
         # Parameters
-        self.gamma = gamma if gamma is not None else self.starting_gamma()
+        self.gamma = gamma if gamma is not None else 5e-3
 
         # Initialize matrices
-        self.W: Optional[torch.Tensor] = None
+        self.W: Optional[np.ndarray] = None
         self.g: Optional[np.ndarray] = None
 
         if init_weights:
-            self.W = self.mercedes()          # (N x K) on self.device
+            self.W = self.mercedes()          
         if init_gain:
-            self.g = self.starting_g()        # (K x K) numpy.identity
-
-    # --------------------------
-    # Methods corresponding to original functions
-    # --------------------------
+            self.g = np.ones(self.K)      
 
     def mercedes(self) -> torch.Tensor:
         """
-        Build an overcomplete set of K unit vectors (columns) in R^N using a
-        greedy "least-cosine-to-selected" selection from 3K random candidates.
+        Build an overcomplete set of K unit vectors (columns) in N-dim using a
+        greedy "least-cosine-to-selected" selection from random candidates.
 
         Returns:
             W_torch: (N x K) torch.Tensor on self.device
         """
-        N, K = self.N, self.K
+        N, K = self.dim, self.K
 
-        # 3K candidate rows in R^N, then L2-normalize rows
-        A = np.random.randn(3 * K, N)
+        #generate random normalized vectors (columns of matrix A)
+        A = np.random.randn(4 * K, N)
         A /= np.linalg.norm(A, axis=1, keepdims=True)
 
         # Start with one random vector (first row), build W whose columns are selected vectors
@@ -94,18 +75,6 @@ class Frame:
             W = np.column_stack([W, A[idx]])  # append column
             A = np.delete(A, idx, axis=0)
 
-        # Convert to torch tensor (should not be needed here)
+        # Convert to torch tensor (not be needed here)
         W_torch = torch.from_numpy(W).float().to(self.device)
         return W
-
-    def starting_g(self) -> np.ndarray:
-        """
-        Initialize diag(g) as an identity (K x K).
-        """
-        return np.ones(self.K)
-
-    def starting_gamma(self) -> float:
-        """
-        Default gradient step size.
-        """
-        return 1e-2
