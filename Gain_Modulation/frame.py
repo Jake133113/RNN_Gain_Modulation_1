@@ -76,5 +76,4 @@ class Frame:
             A = np.delete(A, idx, axis=0)
 
         # Convert to torch tensor (not be needed here)
-        W_torch = torch.from_numpy(W).float().to(self.device)
         return W

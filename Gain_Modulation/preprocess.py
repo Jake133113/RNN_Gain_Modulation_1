@@ -12,7 +12,7 @@ class Preprocess:
 
     def random_cov(self):
         A = ortho_group.rvs(dim=self.dim)
-        eigen_vec = self.rng.uniform(0.01, 3, size=N)
+        eigen_vec = self.rng.uniform(0.01, 3, size=self.dim)
         self.rand_cov_matrix = (A @ np.diag(eigen_vec)) @ A.T
         return self.rand_cov_matrix
 
@@ -20,7 +20,7 @@ class Preprocess:
         if self.rand_cov_matrix is None:
             self.random_cov()
         #create t random input vectors that are N dimensional
-        S_0 = self.rng.normal(size=(self.t, N))
+        S_0 = self.rng.normal(size=(self.t, self.dim))
         S_0 -= S_0.mean(axis=0, keepdims=True) #center the means about 0
         L = np.linalg.cholesky(self.rand_cov_matrix)
         S = S_0 @ L.T
