@@ -36,7 +36,9 @@ class Whiten:
             z_t = W.T @ r_stable
             
             z_memory.append(z_t.copy())          # (ensure values are frozen per step)
-            gains += gamma * ((z_t * z_t).T - 1)  # gain update
+            variances = z_t * z_t
+            gain_change = variances - 1
+            gains += gamma * np.mean(gain_change, -1)  # gain update
             gain_memory.append(gains.copy())      # (ensure values are frozen per step)
 
         return gains, gain_memory, z_memory
