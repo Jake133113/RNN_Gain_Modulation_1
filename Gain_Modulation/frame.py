@@ -53,8 +53,6 @@ class Frame:
         Build an overcomplete set of K unit vectors (columns) in N-dim using a
         greedy "least-cosine-to-selected" selection from random candidates.
 
-        Returns:
-            W_torch: (N x K) torch.Tensor on self.device
         """
         N, K = self.dim, self.K
 
@@ -67,13 +65,11 @@ class Frame:
         A = np.delete(A, 0, axis=0)
         W = np.stack([w_1], axis=1)  # shape (N, 1)
 
-        # Greedily add K-1 vectors: pick the candidate whose max abs cosine to current W is minimal
+        # Pick the candidate whose max abs cosine to current W is minimal
         for _ in range(K - 1):
             cos = A @ W                      # shape (3K-1 - t, t+1)
             closest = np.max(np.abs(cos), axis=1)
             idx = np.argmin(closest)
             W = np.column_stack([W, A[idx]])  # append column
             A = np.delete(A, idx, axis=0)
-
-        # Convert to torch tensor (not be needed here)
         return W
