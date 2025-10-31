@@ -27,13 +27,14 @@ if df.shape[1] > 3:
     plt.tight_layout()
     plt.show()
     
-# --- Plot 1: first three columns ---
-plt.figure(figsize=(8, 4))
-  # handle smaller CSVs safely
-plt.plot(df.index, df.iloc[:, df.shape[1]])
-plt.title("C_rr - Identity")
-plt.xlabel("Step")
-plt.ylabel("Value")
-plt.legend()
-plt.tight_layout()
-plt.show()
+# --- Plot 3: first three columns ---
+if df.shape[1] > 6:
+    plt.figure(figsize=(8, 4))
+    # handle smaller CSVs safely
+    plt.plot(df.index, df.iloc[:, 6])
+    plt.yscale('log')
+    plt.title("||C_rr - I||op")
+    plt.xlabel("Step")
+    plt.ylabel("Value")
+    plt.tight_layout()
+    plt.show()

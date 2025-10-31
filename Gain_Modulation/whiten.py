@@ -42,7 +42,7 @@ class Whiten:
 
         for i in tqdm.trange(t, desc="gain update step: "):
             A = I + W @ np.diag(gains) @ W.T
-            r_stable = np.linalg.solve(A, s_t[i])
+            r_stable = np.linalg.inv(A) @ s_t[i]
             z_t = W.T @ r_stable
 
             # normalize by baseline variance
