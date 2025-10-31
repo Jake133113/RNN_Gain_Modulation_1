@@ -19,9 +19,9 @@ class Preprocess:
     def centered_inputs(self):
         if self.rand_cov_matrix is None:
             self.random_cov()
-        #create t random input vectors that are N dimensional
+
         S_0 = self.rng.normal(size=(self.t, self.dim))
-        S_0 -= S_0.mean(axis=0, keepdims=True) #center the means about 0
         L = np.linalg.cholesky(self.rand_cov_matrix)
-        S = S_0 @ L.T
+        S = S_0 @ L.T                     # correlated samples
+        S -= S.mean(axis=0, keepdims=True)
         return S

@@ -48,7 +48,7 @@ class Frame:
         if init_gain:
             self.g = np.ones(self.K)      
 
-    def mercedes(self) -> torch.Tensor:
+    def mercedes(self) -> np.ndarray:
         """
         Build an overcomplete set of K unit vectors (columns) in N-dim using a
         greedy "least-cosine-to-selected" selection from random candidates.
@@ -72,4 +72,7 @@ class Frame:
             idx = np.argmin(closest)
             W = np.column_stack([W, A[idx]])  # append column
             A = np.delete(A, idx, axis=0)
+
+        W /= np.linalg.norm(W, axis=0, keepdims=True)
+
         return W
