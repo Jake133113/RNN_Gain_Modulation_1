@@ -23,5 +23,7 @@ class Preprocess:
         S_0 = self.rng.normal(size=(self.t, self.dim))
         L = np.linalg.cholesky(self.rand_cov_matrix)
         S = S_0 @ L.T                     # correlated samples
+
+        #S = S / np.maximum(np.linalg.norm(S, axis=1, keepdims=True), 1e-12)
         S -= S.mean(axis=0, keepdims=True)
         return S
