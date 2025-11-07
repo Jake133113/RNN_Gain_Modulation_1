@@ -32,7 +32,7 @@ if df.shape[1] > 3:
     ax.set_ylabel("Variance", fontsize=label_fontsize, fontweight=label_fontweight)
     ax.set_xlabel("")
     ax.set_ylim(0, 2)
-    ax.legend(fontsize=10)
+    ax.legend(fontsize=10, loc='upper right')
     ax.tick_params(axis='both', labelsize=tick_fontsize)
     ax.grid(False)
 else:
@@ -51,4 +51,5 @@ else:
     axes[2].axis("off")
 
 plt.tight_layout(rect=[0, 0, 1, 0.96])  # leave space for main title
+plt.savefig("gain_modulated_whitening.pdf", format="pdf", bbox_inches="tight")
 plt.show()
