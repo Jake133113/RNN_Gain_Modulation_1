@@ -1,8 +1,15 @@
+''' visualize.py: create a 1x3 plot of whitening transformation. First plot shows gains changing per 
+                  time (iteration). Second plot shows the variances of the output along the projections
+                  of the frame vectors. Also can be thought of as the variance of interneuron values. 
+                  Third plot shows the deviation of the average eigenvalue of the covariance matrix of 
+                  the output from the identity matrix during whitening process. Perfectly white corresponds
+                  to a value of 0, and the target is 1e-1.   '''
+
 import pandas as pd
 import matplotlib.pyplot as plt
 
 # Read the CSV
-df = pd.read_csv("white_output3.csv")
+df = pd.read_csv("white_output.csv")
 
 # --- Set up 3-row, 1-column subplot ---
 fig, axes = plt.subplots(3, 1, figsize=(6, 8))
@@ -28,7 +35,7 @@ ax.grid(False)
 if df.shape[1] > 3:
     ax = axes[1]
     for i in range(3, min(6, df.shape[1])):
-        ax.plot(df.index, df.iloc[:, i], label=f"z_{i+1}", linewidth=line_width)
+        ax.plot(df.index, df.iloc[:, i], label=f"z_{i-2}", linewidth=line_width)
     ax.set_ylabel("Variance", fontsize=label_fontsize, fontweight=label_fontweight)
     ax.set_xlabel("")
     ax.set_ylim(0, 2)
