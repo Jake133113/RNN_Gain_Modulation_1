@@ -25,6 +25,7 @@ class Frame:
         gamma: Optional[float] = None,
         init_weights: bool = True,
         init_gain: bool = True,
+        multi_timescale: bool = False,
     ) -> None:
         """
         Args:
@@ -32,9 +33,17 @@ class Frame:
             gamma: gradient step size; defaults to 5e-3 if None
             init_weights: if True, build W during init
             init_gain: if True, build g during init
+            multi_timescale: if false, frame dim scales as O(N^2), if true O(N) instead
         """
         self.dim = int(dim)
-        self.K = np.int64(self.dim * (self.dim + 1) // 2)
+        if multi_timescale == False:
+            self.K = np.int64(self.dim * (self.dim + 1) // 2)
+            self.gamma = gamma if gamma is not None else 5e-3
+        else:
+            self.K = np.int64(2*self.dim)
+            self.gamma_r = 5e-3
+            self.gamma_g = 5e-2
+            self.gamma_w = 1e-5
 
         # Parameters
         self.gamma = gamma if gamma is not None else 5e-3
