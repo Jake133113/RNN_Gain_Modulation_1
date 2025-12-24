@@ -60,7 +60,7 @@ class Whiten2:
             
             # FIX 3: Convergence check using Norm, not vector comparison
             counter = 0
-            while dr_norm > 1e-6 and counter < 1000: # Added safety break
+            while dr_norm > 1e-7 and counter < 5000: # Added safety break
                 z_t = W.T @ r_t
                 n_t = gains * z_t
                 
