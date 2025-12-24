@@ -83,31 +83,24 @@ class Whiten2:
             # Store history
             gain_memory.append(gains.copy())
             
-            # Optional: Expensive to compute covariance/error every step.
-            # Maybe do this every 100 steps?
-            if i % 100 == 0:
+            '''if i % 100 == 0:
                 # Placeholder for variance/error tracking
                 variance_memory.append(np.var(z_t)) 
                 err_memory.append(np.sum((gains - 1)**2)) # Simple proxy error
             else:
                 variance_memory.append(variance_memory[-1] if variance_memory else 0)
-                err_memory.append(err_memory[-1] if err_memory else 0)
+                err_memory.append(err_memory[-1] if err_memory else 0)'''
 
         # FIX 7: Return all the memory arrays
-        return gains, gain_memory, err_memory, variance_memory
+        return gains, gain_memory, err_memory
     
-
-
-
 if __name__ == "__main__":
     # N=2, 5 contexts, 2000 samples each = 10,000 total
     w = Whiten2(dim=2, num_inputs=2000, num_contexts=5)  
     
-    # FIX 8: Call correct method name 'whiten2'
     gains, gain_memory, err_memory, variance_memory = w.whiten2()
 
-    # FIX 9: Handle list of arrays for DataFrame
-    # Note: Flatten 1D arrays if needed
+    # Handle list of arrays for DataFrame
     rows = []
     for i in range(len(gain_memory)):
         # Ensure items are 1D arrays or scalars before concatenation
