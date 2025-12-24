@@ -1,28 +1,32 @@
-''' whiten.py: main script of this repository. Performs semi-online whitening of a set of inputs through
-                adaptively changing gains to meet the whitening objective. '''
-
 import numpy as np
 import tqdm
 from typing import Optional
+import pandas as pd  
 from frame import Frame
 from preprocess import Preprocess
-import pandas as pd  
 
-
-class Whiten2: # Need to adjust this so that it takes in a context
+class Whiten2:
     def __init__(self, 
                  dim: int, 
                  num_inputs: Optional[int] = None, 
+                 num_contexts: int = 1, # Type hint fixed
                  ):
-        self.dim = int(dim) # N
-        self.num_inputs = num_inputs if num_inputs is not None else int(1e4) # default as t = 10000
+        self.dim = int(dim) 
+        self.num_inputs = num_inputs if num_inputs is not None else int(1e4)
+        self.num_contexts = int(num_contexts)
         
-    def i_vals2(self):  # initial values of inputs, Weight matrix, gains, gamma
+    def i_vals2(self): 
         N = self.dim
-        p = Preprocess(dim=N, t=self.num_inputs) # calling preprocess.py for input generation
-        s_t = p.centered_inputs()  
+        # Pass seed for reproducibility if desired
+        p = Preprocess(dim=N, t=self.num_inputs, contexts=self.num_contexts) 
+        
+        # s_t comes out as a list of arrays [Context1, Context2...]
+        cov_matrixes, s_t_list = p.synthetic_dataset()  
 
-        F = Frame(dim=N, multi_timescale=True) # calling frame.py for generation of fixed weight matrix
+        # Concatenate list into one long array
+        s_t = np.concatenate(s_t_list, axis=0)
+
+        F = Frame(dim=N, multi_timescale=True) 
         W = F.mercedes() 
         gamma_r = F.gamma_r
         gamma_g = F.gamma_g
@@ -30,59 +34,88 @@ class Whiten2: # Need to adjust this so that it takes in a context
         gains = F.g
         return s_t, W, gains, gamma_r, gamma_g, gamma_w
 
-    def whiten2(self): # Actual simulation loop and whitening process
-        t = self.num_inputs # num inputs
+    def whiten2(self): 
         s_t, W, gains, gamma_r, gamma_g, gamma_w = self.i_vals2() 
+        
+        # Total samples is num_inputs * num_contexts
+        total_steps = s_t.shape[0]
+        
         N, K = W.shape
-        C_ss = np.cov(s_t, rowvar=False) # covariance matrix of input vectors - not identity
 
-        # unit-norm for weight matrix vectors 
+        # Normalize W columns
         W = W / np.maximum(np.linalg.norm(W, axis=0, keepdims=True), 1e-12)
 
-        I = np.eye(N)
+        gain_memory = []
+        err_memory = []
+        variance_memory = []
+        
+        a = 1.0 # alpha
 
-        gain_memory, err_memory, variance_memory = [], [], [] # initialize arrays for plotting
-        a = 1 #alpha
-
-        # Main double loop
-        for i in tqdm.trange(t, desc="gain update step: "):
-            #inititialize r --> 0 at each step
+        # Main loop
+        for i in tqdm.trange(total_steps, desc="gain update step: "):
+            
+            # Settling Phase (Finding r_t)
             r_t = np.zeros(N)
-
-            while not_converged: #How do I classify convergence?
+            dr_norm = 1.0 
+            
+            # FIX 3: Convergence check using Norm, not vector comparison
+            counter = 0
+            while dr_norm > 1e-6 and counter < 1000: # Added safety break
                 z_t = W.T @ r_t
                 n_t = gains * z_t
-                r_t += gamma_r * (s_t[t] - W @ n_t - a * r_t)
+                
+                dr = gamma_r * (s_t[i] - W @ n_t - a * r_t)
+                
+                r_t += dr
+                dr_norm = np.linalg.norm(dr)
+                counter += 1
             
-            g += gamma_g*(z_t * z_t - np.diag(W.T @ W))
-            W += gamma_w*(r_t @ n_t.T - W @ np.diag(g))
+            # Re-calculate z_t/n_t with final settled r_t
+            z_t = W.T @ r_t
+            n_t = gains * z_t # This is effectively output y
 
-        return gains
+            # Update Gains
+            gains += gamma_g * (z_t * z_t - np.diag(W.T @ W))
+            
+            # Update Weights (outer product for r @ n.T)
+            W += gamma_w * (np.outer(r_t, n_t) - W @ np.diag(gains))
+
+            # Store history
+            gain_memory.append(gains.copy())
+            
+            # Optional: Expensive to compute covariance/error every step.
+            # Maybe do this every 100 steps?
+            if i % 100 == 0:
+                # Placeholder for variance/error tracking
+                variance_memory.append(np.var(z_t)) 
+                err_memory.append(np.sum((gains - 1)**2)) # Simple proxy error
+            else:
+                variance_memory.append(variance_memory[-1] if variance_memory else 0)
+                err_memory.append(err_memory[-1] if err_memory else 0)
+
+        # FIX 7: Return all the memory arrays
+        return gains, gain_memory, err_memory, variance_memory
     
-    def get_variances(self, W, Css, M):
-        N = self.dim
-        Crr = M @ Css @ M.T # because r_stable = M * s_t, this transforms s cov --> r cov
-        Czz = W.T @ Crr @ W # because z_t = W * r_t, this transforms r cov --> z cov
-        variances = np.diag(Czz) # covariance of the interneurons
-        return variances
-    
-    def eval_err(self, M, Css): #compute difference of output cov from identity (perfectly whitened)
-        Crr = M @ Css @ M.T # same as get_variances why this works
-        N = self.dim
-        eigvals = np.linalg.eigvalsh(Crr) # eigenvals of output cov
-        diff = eigvals - 1 
-        error = 1/N * np.sum(diff**2) # average distance squared from 1 of Crr eigvals 
-        return error
+
 
 
 if __name__ == "__main__":
+    # N=2, 5 contexts, 2000 samples each = 10,000 total
+    w = Whiten2(dim=2, num_inputs=2000, num_contexts=5)  
+    
+    # FIX 8: Call correct method name 'whiten2'
+    gains, gain_memory, err_memory, variance_memory = w.whiten2()
 
-    w = Whiten2(dim=2, num_inputs=10000)  # N = 2, t = 10000
-    gains, gain_memory, err_memory, variance_memory = w.whiten()
-
-    rows = [
-        np.concatenate([gain_memory[i], variance_memory[i], np.array([err_memory[i]])])
-        for i in range(len(gain_memory))
-    ]
+    # FIX 9: Handle list of arrays for DataFrame
+    # Note: Flatten 1D arrays if needed
+    rows = []
+    for i in range(len(gain_memory)):
+        # Ensure items are 1D arrays or scalars before concatenation
+        g_val = gain_memory[i]
+        v_val = np.array([variance_memory[i]])
+        e_val = np.array([err_memory[i]])
+        
+        row = np.concatenate([g_val, v_val, e_val])
+        rows.append(row)
 
     pd.DataFrame(rows).to_csv("white2_output.csv", index=False)
