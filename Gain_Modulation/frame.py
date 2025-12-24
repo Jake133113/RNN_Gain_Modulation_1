@@ -40,7 +40,7 @@ class Frame:
             self.K = np.int64(self.dim * (self.dim + 1) // 2)
             self.gamma = gamma if gamma is not None else 5e-3
         else:
-            self.K = np.int64(2*self.dim)
+            self.K = np.int64(self.dim)
             self.gamma_r = 5e-3
             self.gamma_g = 5e-2
             self.gamma_w = 1e-5

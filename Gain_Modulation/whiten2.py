@@ -48,7 +48,6 @@ class Whiten2:
 
         gain_memory = []
         err_memory = []
-        variance_memory = []
         
         a = 1.0 # alpha
 
@@ -90,11 +89,12 @@ class Whiten2:
             context_number = i//steps_per_context # for indexing context number (need correct context cov matrix for error calculation)
             cov = cov_matrices[context_number] # the correct covariance matrix for each context (switches throughout)
             error = self.eval_err(M, cov)
+            err_memory.append(error)
 
         return gains, gain_memory, err_memory
     
     def eval_err(self, M, Css): #compute difference of output cov from identity (perfectly whitened)
-        Crr = M @ Css @ M.T # same as get_variances why this works
+        Crr = np.linalg.inv(M) @ Css @ np.linalg.inv(M) # same as get_variances why this works
         N = self.dim
         eigvals = np.linalg.eigvalsh(Crr) # eigenvals of output cov
         diff = eigvals - 1 
@@ -108,7 +108,6 @@ if __name__ == "__main__":
     gains, gain_memory, err_memory = w.whiten2()
 
     print('gain length: ', len(gains), ' Gain_memory length: ', len(gain_memory), ' err_memory length: ', len(err_memory))
-
     # Handle list of arrays for pd.DataFrame
     rows = []
     for i in range(len(gain_memory)):
