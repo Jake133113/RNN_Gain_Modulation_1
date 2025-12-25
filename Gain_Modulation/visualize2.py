@@ -1,57 +1,70 @@
 import pandas as pd
 import matplotlib.pyplot as plt
+import numpy as np
 
-def plot_whitening_results(csv_file="white2_output.csv"):
-    # 1. Load Data
-    # Assuming the file has no text headers, just numbers. 
-    # If your file has a header row (0, 1, 2), change header=None to header=0
-    df = pd.read_csv(csv_file, header=0)
+def plot_whitening_comparison(csv_file="white2_output.csv", num_contexts=5):
+    # 1. Load Data (No header in your file)
+    df = pd.read_csv(csv_file, header=None)
     
-    # Rename columns for clarity (assuming 3 cols: Gain1, Gain2, Error)
-    df.columns = ['Gain 1', 'Gain 2', 'Error']
+    # 2. Dynamic Column Detection
+    # We know the LAST two columns are errors. The rest are Gains.
+    num_cols = df.shape[1]
+    num_gains = num_cols - 2 
     
-    # 2. Setup Context Lines
-    # We infer the switch points based on total length and known number of contexts (5)
-    NUM_CONTEXTS = 5
+    # Create readable column names
+    gain_cols = [f'Gain {i+1}' for i in range(num_gains)]
+    col_names = gain_cols + ['Error (Adapted W)', 'Error (Fixed W0)']
+    df.columns = col_names
+    
+    # 3. Setup Plotting Parameters
     total_steps = len(df)
-    steps_per_context = total_steps // NUM_CONTEXTS
+    steps_per_context = total_steps // num_contexts
     
-    # 3. Create Plots
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
+    # Increase font sizes globally for "Bigger Labels"
+    plt.rcParams.update({'font.size': 14})
     
-    # --- Plot 1: Gains vs Time ---
-    ax1.plot(df.index, df['Gain 1'], label='Gain Neuron 1', alpha=0.9)
-    ax1.plot(df.index, df['Gain 2'], label='Gain Neuron 2', alpha=0.9)
+    # Create Subplots
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(18, 7))
     
-    ax1.set_title("Neural Gains Adaptation")
-    ax1.set_xlabel("Time Step")
-    ax1.set_ylabel("Gain Value")
-    ax1.legend(loc='upper right')
-    ax1.grid(True, alpha=0.3)
+    # --- Plot 1: Gains ---
+    for col in gain_cols:
+        ax1.plot(df.index, df[col], linewidth=2, label=col)
     
-    # --- Plot 2: Error vs Time ---
-    ax2.plot(df.index, df['Error'], color='black', linewidth=1, label='Covariance Error')
+    ax1.set_title("Gain Evolution", fontsize=18, fontweight='bold')
+    ax1.set_xlabel("Time Step", fontsize=16)
+    ax1.set_ylabel("Gain Value", fontsize=16)
+    ax1.legend(fontsize=12)
+    ax1.grid(True, linestyle=':', alpha=0.4)
+
+    # --- Plot 2: Error Comparison ---
+    # Plot Fixed W0 error first (background)
+    ax2.plot(df.index, df['Error (Fixed W0)'], color='k',  
+             linewidth=1.5, alpha=0.7, label='Error (Fixed $W_0$)')
     
-    ax2.set_title("Whitening Error Convergence")
-    ax2.set_xlabel("Time Step")
-    ax2.set_ylabel("Error (Log Scale)")
-    ax2.set_yscale('log') # Log scale helps see convergence better
-    ax2.legend(loc='upper right')
-    ax2.grid(True, alpha=0.3)
+    # Plot Adapted W error (foreground)
+    ax2.plot(df.index, df['Error (Adapted W)'], color='tab:red', 
+             linewidth=2.5, label='Error (Adapted $W$)')
     
-    # --- Add Vertical Lines for Context Changes ---
-    for k in range(1, NUM_CONTEXTS):
-        switch_point = k * steps_per_context
+    ax2.set_title("Whitening error", fontsize=18, fontweight='bold')
+    ax2.set_xlabel("Time Step", fontsize=16)
+    ax2.set_ylabel("Covariance Error (Log Scale)", fontsize=16)
+    ax2.set_yscale('log')
+    ax2.legend(fontsize=12)
+    ax2.grid(True, linestyle=':', alpha=0.4)
+
+    # --- Vertical Context Lines (No Text) ---
+    for k in range(1, num_contexts):
+        x_pos = k * steps_per_context
         
-        # Add line to Gain Plot
-        ax1.axvline(x=switch_point, color='grey', linestyle='--', alpha=0.7, linewidth=2)
+        # Solid opaque grey line
+        line_props = {'color': 'gray', 'linewidth': 2, 'alpha': 0.6}
         
-        # Add line to Error Plot
-        ax2.axvline(x=switch_point, color='grey', linestyle='--', alpha=0.7, linewidth=2)
+        ax1.axvline(x=x_pos, **line_props)
+        ax2.axvline(x=x_pos, **line_props)
 
     plt.tight_layout()
-    plt.savefig('whiten_analysis.png')
-    print("Plot saved as 'whiten_analysis.png'")
+    plt.savefig('whiten_comparison.png')
+    print("Plot saved as 'whiten_comparison.png'")
 
 if __name__ == "__main__":
-    plot_whitening_results()
+    plot_whitening_comparison()

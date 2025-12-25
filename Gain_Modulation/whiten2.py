@@ -38,6 +38,7 @@ class Whiten2:
     def whiten2(self): 
         s_t, W, gains, gamma_r, gamma_g, gamma_w, cov_matrices = self.i_vals2() 
         
+        W_0 = W.copy()
         # Total samples is num_inputs * num_contexts
         total_steps = s_t.shape[0]
         
@@ -48,6 +49,7 @@ class Whiten2:
 
         gain_memory = []
         err_memory = []
+        err2_memory = []
         
         a = 1.0 # alpha
 
@@ -85,13 +87,16 @@ class Whiten2:
 
             # Calculate and save error
             M = a*np.eye(self.dim) + W @ np.diag(gains) @ W.T
+            M2 = a*np.eye(self.dim) + W_0 @ np.diag(gains) @ W_0.T
             steps_per_context = total_steps//self.num_contexts 
             context_number = i//steps_per_context # for indexing context number (need correct context cov matrix for error calculation)
             cov = cov_matrices[context_number] # the correct covariance matrix for each context (switches throughout)
             error = self.eval_err(M, cov)
+            error2 = self.eval_err(M2, cov)
             err_memory.append(error)
+            err2_memory.append(error2)
 
-        return gains, gain_memory, err_memory
+        return gains, gain_memory, err_memory, err2_memory
     
     def eval_err(self, M, Css): #compute difference of output cov from identity (perfectly whitened)
         Crr = np.linalg.inv(M) @ Css @ np.linalg.inv(M) # same as get_variances why this works
@@ -105,17 +110,17 @@ if __name__ == "__main__":
     # N=2, 5 contexts, 2000 samples each = 10,000 total
     w = Whiten2(dim=2, num_inputs=2000, num_contexts=5)  
 
-    gains, gain_memory, err_memory = w.whiten2()
+    gains, gain_memory, err_memory, err2_memory = w.whiten2()
 
-    print('gain length: ', len(gains), ' Gain_memory length: ', len(gain_memory), ' err_memory length: ', len(err_memory))
     # Handle list of arrays for pd.DataFrame
     rows = []
     for i in range(len(gain_memory)):
         # Ensure items are 1D arrays or scalars before concatenation
         g_val = gain_memory[i]
         e_val = np.array([err_memory[i]])
+        e_val2 = np.array([err2_memory[i]])
         
-        row = np.concatenate([g_val, e_val])
+        row = np.concatenate([g_val, e_val, e_val2])
         rows.append(row)
 
     pd.DataFrame(rows).to_csv("white2_output.csv", index=False)
