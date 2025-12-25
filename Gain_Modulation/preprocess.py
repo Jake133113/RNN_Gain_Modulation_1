@@ -62,7 +62,7 @@ class Preprocess:
             S -= S.mean(axis=0, keepdims=True)
             synthetic_inputs.append(S)
         
-        return Cov_contexts, synthetic_inputs
+        return Cov_contexts, synthetic_inputs, V
 
 
         
