@@ -34,7 +34,7 @@ def plot_whitening_comparison(csv_file="white2_output.csv", npz_file="frame_data
     ax1.grid(True, linestyle=':', alpha=0.4)
 
     # ==========================================
-    # PLOT 2: ERROR COMPARISON (LINEAR SCALE)
+    # PLOT 2: ERROR COMPARISON (LOG SCALE)
     # ==========================================
     ax2.plot(df.index, df['Error (Fixed W0)'], color='k',  
              linewidth=1.5, alpha=0.7, label='Error (Fixed $W_0$)')
@@ -44,10 +44,13 @@ def plot_whitening_comparison(csv_file="white2_output.csv", npz_file="frame_data
     
     ax2.set_title("Whitening Error", fontsize=18, fontweight='bold')
     ax2.set_xlabel("Time Step", fontsize=16)
-    ax2.set_ylabel("Covariance Error", fontsize=16) # Removed "(Log Scale)"
-    # ax2.set_yscale('log')  <-- REMOVED
+    ax2.set_ylabel("Covariance Error (Log Scale)", fontsize=16)
+    
+    # --- CHANGE 1: Set Log Scale ---
+    ax2.set_yscale('log')  
+    
     ax2.legend(fontsize=12, loc='upper right')
-    ax2.grid(True, linestyle=':', alpha=0.4)
+    ax2.grid(True, linestyle=':', alpha=0.4, which='both') # 'both' grids help read log scales
 
     # Add Vertical Context Lines to Plot 1 & 2
     for k in range(1, num_contexts):
@@ -85,10 +88,17 @@ def plot_whitening_comparison(csv_file="white2_output.csv", npz_file="frame_data
             label = "Init Weights ($W_0$)" if i == 0 else None
             plot_diameter(ax3, W_init[:, i], color='tab:blue', linestyle='-', linewidth=2, alpha=0.6, label=label)
 
-        # 3. Plot Final Weights (W) - Solid Red
+        # 3. Plot Final Weights (W) - Red (First is Dotted)
         for i in range(W_final.shape[1]):
-            label = "Final Weights ($W$)" if i == 0 else None
-            plot_diameter(ax3, W_final[:, i], color='tab:red', linestyle='-', linewidth=3, alpha=1.0, label=label)
+            # --- CHANGE 2: Logic for Dotted Line on First Vector ---
+            if i == 0:
+                current_ls = ':'   # Dotted for the first vector
+                label = "Final Weights ($W$)" 
+            else:
+                current_ls = '-'   # Solid for the rest
+                label = None 
+                
+            plot_diameter(ax3, W_final[:, i], color='tab:red', linestyle=current_ls, linewidth=3, alpha=1.0, label=label)
 
         ax3.set_title("Frame Alignment (Diameters)", fontsize=18, fontweight='bold')
         ax3.set_xlabel("Dimension 1", fontsize=16)
