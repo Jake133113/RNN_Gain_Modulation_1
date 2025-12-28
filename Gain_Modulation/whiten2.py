@@ -110,8 +110,8 @@ class Whiten2:
         return error
 
 if __name__ == "__main__":
-    # N=2, 5 contexts, 2000 samples each = 10,000 total
-    w = Whiten2(dim=2, num_inputs=2000, num_contexts=5)  
+    # N=2, 200 contexts, 1000 samples each = 300,000 total
+    w = Whiten2(dim=2, num_inputs=1000, num_contexts=1000)  
 
     gains, gain_memory, err_memory, err2_memory, W_0, W_final, V_ideal = w.whiten2()
 
